@@ -16,6 +16,7 @@ if(!("rjags" %in% installed.packages())) install.packages("rjags")
 if(!("coda" %in% installed.packages())) install.packages("coda")
 if(!("ggpubr" %in% installed.packages())) install.packages("ggpubr")
 if(!("ggmcmc" %in% installed.packages())) install.packages("ggmcmc")
+if(!("lmerTest" %in% installed.packages())) install.packages("lmerTest")
 
 
 library(tidyverse)
@@ -29,18 +30,7 @@ library(rjags)
 library(coda)
 library(ggpubr)
 library(ggmcmc)
-
-# library(magrittr)
-# 
-# 
-# library(lattice)
-# library(broom)
-# library(ggpubr)
-# 
-
-#library("readxl")
-
-
+library(lmerTest)
 
 
 

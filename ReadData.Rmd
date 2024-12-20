@@ -55,7 +55,82 @@ drug = data.frame(pro,dop,plac)
 
 ```
 
+#Comparing average confidence in Two-step task across three drug conditions, Section 2.2.2
+```{r}
+nsub= 30
+ndrug = 3
+conf_compar = matrix(0, nrow = ndrug, ncol=nsub)
+
+for (dru in 1:ndrug){
+  for (sub in 1:nsub){
+      drugpos = drug[sub,dru]
+      tasksub = taskdrug[taskdrug$subject==sub & taskdrug$days==drugpos,]
+      confsub = tasksub$conf
+      conf_compar[drugpos,sub] = mean(confsub, na.rm = TRUE)
+
+   }
+}
 
 
+#Compare confidence in Perceptual task across drug conditions
+  allcoef = c(conf_compar[1,],conf_compar[3,],conf_compar[2,])
+  drugname = c(rep("pro",nsub),rep("plac",nsub),rep("dop",nsub))
+  subs = rep(c(1:nsub), 3)
+  meta = data.frame(allcoef,drugname = as.factor(drugname), subs= as.factor(subs))
+  resaov = aov(allcoef~drugname+Error(subs/drugname) , data = meta)
+  summary(resaov)
+  
+  # the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(allcoef ,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(allcoef ~ drugname+ (1|subs) , data = meta)
+summary(res)
 
+```
+
+
+```{r}
+#Comparing Quadratic scoring rule (QSR) in Two-step task across three drug conditions, Section 2.2.2
+
+nsub= 30
+ndrug = 3
+qsr_compar = matrix(0, nrow = ndrug, ncol=nsub)
+
+for (dru in 1:ndrug){
+  for (sub in 1:nsub){
+      drugpos = drug[sub,dru]
+      tasksub = taskdrug[taskdrug$subject==sub & taskdrug$days==drugpos,]
+      confsub = tasksub$conf
+      perfsub = tasksub$score
+      dif = mean((perfsub/2 - confsub/50 + 1)^2, na.rm = TRUE)
+      qsr_compar[drugpos, sub] = 1- dif
+
+   }
+}
+
+
+#Compare confidence in Perceptual task across drug conditions
+  allcoef = c(qsr_compar[1,],qsr_compar[3,],qsr_compar[2,])
+  drugname = c(rep("pro",nsub),rep("plac",nsub),rep("dop",nsub))
+  subs = rep(c(1:nsub), 3)
+  meta = data.frame(allcoef,drugname = as.factor(drugname), subs= as.factor(subs))
+  resaov = aov(allcoef~drugname+Error(subs/drugname) , data = meta)
+  summary(resaov)
+  
+  # the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(allcoef ,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(allcoef ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+# between pro and plac
+wilcox.test(qsr_compar[1,],qsr_compar[3,] )
+# between dop and plac
+wilcox.test(qsr_compar[2,],qsr_compar[3,] )
+# between pro and dop
+wilcox.test(qsr_compar[1,],qsr_compar[2,] )
+
+```
 

@@ -12,6 +12,7 @@ source("libs/plot/compare_mbmf_reg_plot.R")
 
 taskdrug = readRDS("data/taskdrug2.rds")
 drug = readRDS("data/drug.rds")
+ # pro, dop, plac are refer to the drug conditions propranolol, L-DOPA, Placebo
 ```
 
 ```{r a}
@@ -71,7 +72,6 @@ for (dru in 1:ndrug){
 }
 
 fit_param =list(perfor,alphafit,wmbfit,wmffit,forgetfit,prfit,pzfit)
-#saveRDS(fit_param, file = "data/fit_6param_30sub_100iter.rds") 
 ```
 
 # Compare the parameters in three conditions, plots
@@ -93,20 +93,91 @@ prow <- plot_grid(
 prow
 ```
 
-# Compare the parameters in three conditions, statistics (Anova,permutation)
+# Compare the parameters in three conditions, statistics (Anova,lmer, permutation), section 2.2.1
 
 ```{r}
-
+#  Goodness of fit
 fit_param = readRDS("data/fit_6param_30sub_100iter.rds") 
+subs = c(1:30)
+nsub = length(subs)
+tot_2opt = c(fit_param[[1]][1,],fit_param[[1]][3,],fit_param[[1]][2,])# Goddness of fit was the firth one
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs) )
+res = aov(tot_2opt~drugname +Error(subs/drugname) , data = meta)
+summary(res)
+
+
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+
+```
+
+```{r}
+# MF weights
+fit_param = readRDS("data/fit_6param_30sub_100iter.rds") 
+subs = c(1:30)
+nsub = length(subs)
+tot_2opt = c(fit_param[[4]][1,],fit_param[[4]][3,],fit_param[[4]][2,])# MF weight was the forth one
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs) )
+res = aov(tot_2opt~drugname +Error(subs/drugname) , data = meta)
+summary(res)
+
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+
+```
+
+```{r}
+# MB weights
+fit_param = readRDS("data/fit_6param_30sub_100iter.rds") 
+subs = c(1:30)
+nsub = length(subs)
+tot_2opt = c(fit_param[[3]][1,],fit_param[[3]][3,],fit_param[[3]][2,]) # MB weight was the third one
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs) )
+res = aov(tot_2opt~drugname +Error(subs/drugname) , data = meta)
+cmbfval = summary(res)[[1]][[2,"F value"]]
+cmbpval = summary(res)[[1]][[2,"Pr(>F)"]]
+print(paste0("F: ", cmffval, " P: ", cmfpval))
+
+
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
+```
+
+# comparing the MB contribution across three conditions for the simulated behavior from model
+```{r}
+randeff = readRDS("data/mixedreg_MBcont_1000simu.rds")
+randof = apply(randeff,c(1,3), mean)
 nsub=30
-tot_2opt = c(fit_param[[1]][1,],fit_param[[1]][2,],fit_param[[1]][3,])#,confdrugs[[3]][coef,])
-drugname = c(rep("p", nsub), rep("d", nsub), rep("pl", nsub))
-meta = data.frame(tot_2opt,drugname = as.factor(drugname) )
-aov(tot_2opt~drugname , data = meta) %>% summary() 
-kruskal.test(tot_2opt~drugname , data = meta)
+subs = c(1:nsub)
+tot_2opt = c(randof[1,subs],randof[3,subs],randof[2,subs])
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs= as.factor(subs) )
+res = aov(tot_2opt~drugname+ Error(subs/drugname) , data = meta) 
+summary(res)
 
-
-
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
 ```
 
 

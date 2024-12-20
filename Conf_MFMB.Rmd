@@ -2,6 +2,7 @@
 title: "Conf_on_MB"
 output: html_document
 ---
+#Fig 3. D & H. At the file "Conf_MFMB.Rmd", there are codes for visualization and statistics on the regression results. The regression analysis was done with Matlab codes, written by "Rani Moran", in the "Matlab-codes/Conf_MFMB_regression.m".
 
 We compared the influence on confidence on MB behavior in the next trial in three drug conditions, the analysis was done in Rani Moran's code at Matlab, in the below i just show the plots and statistical tests.
 ```{r setup, include=FALSE}
@@ -13,34 +14,50 @@ source("libs/plot/mytheme.R")# just for better visualization of plots
 
 
 ```{r}
+#_pro , _dop , and _plac refer to the drug conditions
 confmb_pro = readMat("data/Data_in_matlab/tot_confMB_pro.mat")  # fixed+random, 30 subs
-confmb_dop = readMat("data/Data_in_matlab/tot_confMB_dop.mat")
 confmb_plac = readMat("data/Data_in_matlab/tot_confMB_plac.mat")
+confmb_dop = readMat("data/Data_in_matlab/tot_confMB_dop.mat")
 confmbpro = confmb_pro$tot.effects.with.intercept
-confmbdop = confmb_dop$tot.effects.with.intercept
 confmbplac = confmb_plac$tot.effects.with.intercept
-confmbdrugs = list(confmbpro,confmbdop,confmbplac)
+confmbdop = confmb_dop$tot.effects.with.intercept
+confmbdrugs = list(confmbpro,confmbplac,confmbdop)
 ```
 
+#Section 2.2.2
 ```{r}
-### Anova to compare Betas, influence of regressors, between drug conditions
+### Comparing Betas, influence of regressors, between drug conditions
 coef=4
-#25,26,28
 nsub=30
 subs = c(1:30)
-tot_2opt = c(confmbdrugs[[2]][coef,subs],confmbdrugs[[3]][coef,subs],confmbdrugs[[1]][coef,subs])
-drugname = c(rep("p", nsub), rep("d", nsub), rep("pl", nsub))
-meta = data.frame(tot_2opt,drugname = as.factor(drugname) )
-res = aov(tot_2opt~drugname , data = meta)
-cmbfval = summary(res)[[1]][[1,"F value"]]
-cmbpval = summary(res)[[1]][[1,"Pr(>F)"]]
-#kruskal.test(tot_2opt~drugname , data = meta) 
+tot_2opt = c(confmbdrugs[[1]][coef,subs],confmbdrugs[[2]][coef,subs],confmbdrugs[[3]][coef,subs])
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname) , subs= as.factor(subs))#
+# Repeated measure anova
+res = aov(tot_2opt~drugname+ Error(subs/drugname) , data = meta)
+summary(res)
+
+
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+# Posthoc tests
+# between pro and plac
+wilcox.test(confmbdrugs[[1]][coef,subs],confmbdrugs[[2]][coef,subs] )
+# between dop and plac
+wilcox.test(confmbdrugs[[3]][coef,subs],confmbdrugs[[2]][coef,subs] )
+# between pro and dop
+wilcox.test(confmbdrugs[[1]][coef,subs],confmbdrugs[[3]][coef,subs] )
 ```
  
-
+# Fig. 3H
 ```{r}
 coef=4
-effectmf= data.frame(confmbdrugs[[1]][coef,],confmbdrugs[[3]][coef,],confmbdrugs[[2]][coef,])
+effectmf= data.frame(confmbdrugs[[1]][coef,],confmbdrugs[[2]][coef,],confmbdrugs[[3]][coef,])
 p1 = compare_mbmf_reg_plot(effectmf)
 p1
 ```
@@ -55,31 +72,42 @@ confmf_plac = readMat("data/Data_in_matlab/tot_confMF_plac.mat")
 confmfpro = confmf_pro$tot.effects.with.intercept
 confmfdop = confmf_dop$tot.effects.with.intercept
 confmfplac = confmf_plac$tot.effects.with.intercept
-confmfdrugs = list(confmfpro,confmfdop,confmfplac)
+confmfdrugs = list(confmfpro, confmfplac, confmfdop)
 ```
 
-
+#Section 2.2.2
 ```{r}
-### Anova to compare Betas, influence of regressors, between drug conditions
+### Comparing Betas, influence of regressors, between drug conditions
 coef=4
 #25,26,28
 nsub=30
 subs = c(1:30)
-tot_2opt = c(confmfdrugs[[2]][coef,subs],confmfdrugs[[3]][coef,subs],confmfdrugs[[1]][coef,subs])
-drugname = c(rep("p", nsub), rep("d", nsub), rep("pl", nsub))
-meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs )
-res = aov(tot_2opt~drugname +(drugname/subs) , data = meta)
-cmbfval = summary(res)[[1]][[1,"F value"]]
-cmbpval = summary(res)[[1]][[1,"Pr(>F)"]]
-#kruskal.test(tot_2opt~drugname , data = meta) 
-wilcox.test(confmbdrugs[[1]][coef,subs],confmbdrugs[[3]][coef,subs] )
+tot_2opt = c(confmfdrugs[[1]][coef,subs],confmfdrugs[[2]][coef,subs],confmfdrugs[[3]][coef,subs])
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs) )
+res = aov(tot_2opt~drugname +Error(subs/drugname) , data = meta)
+summary(res)
+
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+# between pro and plac
+wilcox.test(confmfdrugs[[1]][coef,subs],confmfdrugs[[2]][coef,subs] )
+# between dop and plac
+wilcox.test(confmfdrugs[[3]][coef,subs],confmfdrugs[[2]][coef,subs] )
+# between pro and dop
+wilcox.test(confmfdrugs[[1]][coef,subs],confmfdrugs[[3]][coef,subs] )
 
 ```
 
-
+# Fig. 3D
 ```{r}
 coef=4
-effectmf= data.frame(confmfdrugs[[1]][coef,],confmfdrugs[[3]][coef,],confmfdrugs[[2]][coef,])
+effectmf= data.frame(confmfdrugs[[1]][coef,],confmfdrugs[[2]][coef,],confmfdrugs[[3]][coef,])
 p1 = compare_mbmf_reg_plot(effectmf)
 p1
 ```

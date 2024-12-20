@@ -2,6 +2,7 @@
 title: "MB/MF_contribution, drug conditions"
 output: html_document
 ---
+#Fig 3. A & F & C & G. At the file "MBMF_contribution.Rmd", there are codes for visualization and statistics on the regression results. The regression analysis was done with Matlab codes, written by "Rani Moran", in the "Matlab-codes/MBMF_contributions_regression.m".
 
 ```{r setup, include=FALSE}
 source("libs/Librarries.R") 
@@ -9,22 +10,23 @@ source("libs/plot/compare_mbmf_reg_plot.R")
 ```
 
 ```{r}
+#_pro , _dop , and _plac refer to the drug conditions
 # four rows are related to intercept and MB, prob and their interaction
-propmf = readMat("data/Data_in_matlab/tot_MFprop_30.mat")
-dopmf = readMat("data/Data_in_matlab/tot_MFdop_30.mat")
+promf = readMat("data/Data_in_matlab/tot_MFprop_30.mat")
 placmf = readMat("data/Data_in_matlab/tot_MFplac_30.mat")
-propmb = readMat("data/Data_in_matlab/tot_regparam_pro.mat")
-dopmb = readMat("data/Data_in_matlab/tot_regparam_dop.mat")
+dopmf = readMat("data/Data_in_matlab/tot_MFdop_30.mat")
+promb = readMat("data/Data_in_matlab/tot_regparam_pro.mat")
 placmb = readMat("data/Data_in_matlab/tot_regparam_plac.mat")
-propmf = propmf$tot.effects.with.intercept
-dopmf = dopmf$tot.effects.with.intercept
+dopmb = readMat("data/Data_in_matlab/tot_regparam_dop.mat")
+promf = promf$tot.effects.with.intercept
 placmf = placmf$tot.effects.with.intercept
-propmb = propmb$tot.effects.with.intercept
-dopmb = dopmb$tot.effects.with.intercept 
+dopmf = dopmf$tot.effects.with.intercept
+promb = promb$tot.effects.with.intercept
 placmb = placmb$tot.effects.with.intercept
+dopmb = dopmb$tot.effects.with.intercept 
 ```
 
-#MB contribution in Placebo condition, Figure 3B
+#MB contribution in Placebo condition, Figure 3F
 ```{r}
 placmb_fix = readMat("data/Data_in_matlab/coef_mbreg_plac.mat")
 placsemb = readMat("data/Data_in_matlab/se_mbreg_plac.mat")
@@ -56,32 +58,59 @@ dt = data.frame(ind = c(1:3), index = as.numeric(means), ss = as.numeric(se))
 
 # Distribution plots to compare MB and MF contributions, Figures 3 C & G
 ```{r}
-effectmf= data.frame(propmf[2,],placmf[2,],dopmf[2,])
+effectmf= data.frame(promf[2,],placmf[2,],dopmf[2,])
 p1 = compare_mbmf_reg_plot(effectmf)
+p1
 
-
-effectmb= data.frame(propmb[2,],placmb[2,],dopmb[2,])
+effectmb= data.frame(promb[2,],placmb[2,],dopmb[2,])
 p2 = compare_mbmf_reg_plot(effectmb)
 p2
-
 ```
 
-
+# Section 2.2.1 , MF
 ```{r}
-### Anova to compare Betas, influence of regressors, between drug conditions
+### Comparing Betas, influence of regressors, between drug conditions
 coef=2
 nsub=30
 subs = c(1:nsub)
-tot_2opt = c(propmb[coef,subs], dopmb[coef,subs],placmb[coef,subs])
-drugname = c(rep("p", nsub), rep("d", nsub), rep("pl", nsub))
-meta = data.frame(tot_2opt,drugname = as.factor(drugname) )
-res= aov(tot_2opt~drugname , data = meta) 
+tot_2opt = c(promf[coef,subs],placmf[coef,subs], dopmf[coef,subs])
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs) )
+res= aov(tot_2opt ~ drugname + Error(subs/drugname) , data = meta) 
 summary(res)
-mbfval = summary(res)[[1]][[1,"F value"]]
-mbpval = summary(res)[[1]][[1,"Pr(>F)"]]
-#kruskal.test(tot_2opt~drugname , data = meta) 
-#t.test(placmb[coef,subs],dopmb[coef,subs])
 
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
 
+```
 
+# Section 2.2.1, MB
+```{r}
+### Comparing Betas, influence of regressors, between drug conditions
+coef=2
+nsub=30
+subs = c(1:nsub)
+tot_2opt = c(promb[coef,subs],placmb[coef,subs], dopmb[coef,subs])
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs) )
+res= aov(tot_2opt~drugname+ Error(subs/drugname) , data = meta) 
+summary(res)
+
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+# between pro and plac
+wilcox.test(promb[coef,subs],placmb[coef,subs])
+# between dop and plac
+wilcox.test(dopmb[coef,subs],placmb[coef,subs])
+# between pro and dop
+wilcox.test(promb[coef,subs],dopmb[coef,subs])
 ```

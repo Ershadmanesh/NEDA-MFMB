@@ -3,7 +3,7 @@ title: "Hmeta_drugs"
 output: html_document
 date: "2023-02-09"
 ---
-
+#Fig 2. A & B & C. At the file "Hmeta_drugs.Rmd". These codes call the functions from "HMeta/R"
 ```{r}
 source("libs/Librarries.R") 
 source("HMeta/R/trials2counts.R")
@@ -70,27 +70,21 @@ nR_S1 = nrg_s1
 nR_S2 = nrg_s2
 output <- fit_metad_groupcorr(nR_S1 = nR_S1, nR_S2 = nR_S2) # Fitting to Hmeta, for all three groups considering to correlation between three groups
 
-#saveRDS(output, file= "data/hmeta_depndent_3group.rds")
 ```
 
 #The code to check HDI and Rhat (not a main result in the draft)
+# Reported at section 4.3, Data Analysis (Rhat)
 ```{r}
 output = readRDS("data/hmeta_depndent_3group.rds")
 
-Value <- summary(output)
-stat <- data.frame(mean = Value$statistics[,"Mean"])
-  stat %<>% rownames_to_column(var = "name")
 # Rhat 
 Value <- gelman.diag(output, confidence = 0.95)
 Rhat <- data.frame(conv = Value$psrf)
-# HDI 
-HDI <- data.frame(HPDinterval(output, prob = 0.95))
-HDI %<>%
-  rownames_to_column(var = "name")
+
 
 ```
 
-#plot the group posterior distributions for comparison
+#plot the group posterior distributions for comparison, Figure 2B
 ```{r}
 ###plot M.Ratio for all three groups
 output = readRDS("data/hmeta_depndent_3group.rds")
@@ -98,6 +92,10 @@ mcmcsample <- ggs(output)
 mu1 = exp(mcmcsample$value[which(mcmcsample$Parameter=="mu_logMratio[1]")])
 mu2 = exp(mcmcsample$value[which(mcmcsample$Parameter=="mu_logMratio[2]")])
 mu3 = exp(mcmcsample$value[which(mcmcsample$Parameter=="mu_logMratio[3]")])
+
+# Reported at section 2.1; 80% for pro, 60% for dop (L-DOPA)
+length(which(mu1-mu3<0))/length(mu1-mu3)
+length(which(mu2-mu3>0))/length(mu2-mu3)
 
 randcoef = c(mu1,mu3,mu2)
 nsam = length(mu1)
@@ -114,6 +112,7 @@ p
 
 
 #To see the number of samples that are higher in one group relative to another one (not an critical code)
+# Sectionn 2.1 of the paper
 ```{r}
 ### increase by Dopamine and decrease by Prop subject by subject.
 output = readRDS("data/hmeta_depndent_3group.rds")
@@ -133,9 +132,7 @@ for (sub in 1:nsub){
     ratio_dif_indiv[sub,1,2] = mean(mu1-mu3)
     ratio_dif_indiv[sub,2,2] = mean(mu2-mu3)
 }
-# saveRDS(ratio_dif_indiv, file ="/Users/sershadmanesh/Nextcloud/Drug_study/Public/data/mu_deltaM.Ratio_dependentgroups_indiv.rds")
 
-cor.test( ratio_dif_indiv[,,1], ratio_dif_indiv[,,2])
 
 length(which(mu1-mu3<0))/length(mu1-mu3)
 length(which(mu2-mu3>0))/length(mu2-mu3)
@@ -143,8 +140,9 @@ length(which(mu2-mu3>0))/length(mu2-mu3)
 ```
 
 
-#plot that compares Hmeta across different groups for each subject.
+#plot that compares Hmeta across different groups for each subject, Figure 2C
 ```{r}
+#_pro , _dop , and _plac refer to the drug conditions
 ### increase vy Dopamine and decrease by Prop subject by subject.
 output = readRDS("data/hmeta_depndent_3group.rds")
 mcmcsample <- ggs(output)
@@ -152,32 +150,47 @@ nsub=30
 ndrug = 3
 meta_indiv = array(0, c(nsub,ndrug)) #prop and Dop minus Place
 for (sub in 1:nsub){
-    meta_indiv[sub,1] = mean(mcmcsample$value[which(mcmcsample$Parameter==paste0("Mratio[",sub,",1]"))]) #prop
+    meta_indiv[sub,1] = mean(mcmcsample$value[which(mcmcsample$Parameter==paste0("Mratio[",sub,",1]"))]) #pro
     meta_indiv[sub,2] = mean(mcmcsample$value[which(mcmcsample$Parameter==paste0("Mratio[",sub,",2]"))]) #dop
     meta_indiv[sub,3] = mean(mcmcsample$value[which(mcmcsample$Parameter==paste0("Mratio[",sub,",3]"))]) #plac
     
 }
- #saveRDS(meta_indiv, file #="data/mean_M.Ratio_dependentgroups_indiv.rds")
-
-t.test(meta_indiv[,2],meta_indiv[,3])
 
 p=compare_mbmf_reg_plot(cbind( meta_indiv[,1],meta_indiv[,3],meta_indiv[,2]))
 p
 ```
 
-#Anova test to compare each two groups, individual estimations of Hmeta
+#Test to show infleunce of drug conditions on individual estimations of Hmeta
+# Section 2.1
 ```{r}
-### Anova to compare individual posteriors from Hmeta, between drug conditions
+### Comparing the individual posteriors from Hmeta, between drug conditions
 nsub = 30
-tot_2opt = c(meta_indiv[,2],meta_indiv[,3])#,meta_indiv[,3])
-drugname = c(rep("pr", nsub), rep("d", nsub))#, rep("pl", nsub))
-meta = data.frame(tot_2opt,drugname = as.factor(drugname) )
-#aov(tot_2opt~drugname , data = meta) %>% summary() 
-kruskal.test(tot_2opt~drugname , data = meta)
+subs = c(1:nsub)
+tot_2opt = c(meta_indiv[,1],meta_indiv[,3] ,meta_indiv[,2])
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# Repeated measure anova
+res = aov(tot_2opt~drugname+ Error(subs/drugname) , data = meta) 
+summary(res)
+
+# the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(tot_2opt,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(tot_2opt ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+# between pro and plac
+wilcox.test(meta_indiv[,1],meta_indiv[,3] )
+# between dop and plac
+wilcox.test(meta_indiv[,2],meta_indiv[,3] )
+# between pro and dop
+wilcox.test(meta_indiv[,1],meta_indiv[,2] )
+
 ```
 
 
-#compare performance under drugs
+#compare performance under drugs, Fig 2A
 ```{r}
 ndrug = 3
 nt_bl =25
@@ -214,14 +227,43 @@ for (dru in 1:ndrug){
 effectmb= data.frame(perf[1,],perf[3,],perf[2,])
 p2 = compare_mbmf_reg_plot(effectmb)
 p2
+```
 
-
-#Anova  
+# Section 2.1
+```{r}
+#Compare performance in Perceptual task across drug conditions
   allcoef = c(perf[1,],perf[3,],perf[2,])#confcor_med
-  drugname = c(rep("p",nsub),rep("pl",nsub),rep("d",nsub))
+  drugname = c(rep("pro",nsub),rep("plac",nsub),rep("dop",nsub))
   subs = rep(c(1:nsub), 3)
-  meta = data.frame(allcoef,drugname = as.factor(drugname), subs)
-  resaov = aov(allcoef~drugname+(1/subs) , data = meta)
+  meta = data.frame(allcoef,drugname = as.factor(drugname), subs= as.factor(subs))
+  resaov = aov(allcoef~drugname+Error(subs/drugname) , data = meta)
   summary(resaov)
   
+  # the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("pro", nsub), rep("plac", nsub), rep("dop", nsub))
+meta = data.frame(allcoef ,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(allcoef ~ drugname+ (1|subs) , data = meta)
+summary(res)
+  
 ```
+
+# Section 2.1
+```{r}
+#Compare confidence in Perceptual task across drug conditions
+  allcoef = c(conf[1,],conf[3,],conf[2,])#confcor_med
+  drugname = c(rep("pro",nsub),rep("plac",nsub),rep("dop",nsub))
+  subs = rep(c(1:nsub), 3)
+  meta = data.frame(allcoef,drugname = as.factor(drugname), subs= as.factor(subs))
+  resaov = aov(allcoef~drugname+Error(subs/drugname) , data = meta)
+  summary(resaov)
+  
+  # the lmer orders the conditions from A-Z, and take the first one as the control condition, it is teh reason that i added A,B,C before our drug names
+drugname = c(rep("Bpro", nsub), rep("Aplac", nsub), rep("Cdop", nsub))
+meta = data.frame(allcoef ,drugname = as.factor(drugname), subs = as.factor(subs))
+# lmer
+res = lmer(allcoef ~ drugname+ (1|subs) , data = meta)
+summary(res)
+
+```
+

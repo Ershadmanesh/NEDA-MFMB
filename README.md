@@ -47,14 +47,14 @@ avenues for mitigating dysfunction.
 1- clone repository for https: git clone
 <https://github.com/Ershadmanesh/NEDA-MFMB/tree/main>
 
-2- In RStudio,
+2- In RStudio version 4.2 (preferred),
 load "NEDA-MFMB.Rproj"
 
 ## Usage
 
 -   To view the Two-outcome task data in a data frame format, run the ReadData.Rmd script. This script also generates the drug data frame, with column descriptions provided within the file. Additionally, it establishes the association between drug conditions and the days of the experiment for all subjects. The output is saved in the data directory and is utilized in subsequent analyses.
 
-- All the required packages would be installed on your system by running the required "Rmd" files, the code "source("libs/Librarries.R")" plays this role.
+- All the required packages would be installed on your system by running the required "Rmd" files, the code "source("libs/Libraries.R")" plays this role. JAGS must be installed on your machine.
 
 -   To produce plots:
 
